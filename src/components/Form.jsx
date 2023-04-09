@@ -1,7 +1,8 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import styled from "@emotion/styled"
+import Error from "./Error"
 import useSelectCurrency from "../hooks/useSelectCurrency"
-import {currency} from '../data/currency'
+import {currencies} from '../data/currencies'
 
 const InputSubmit = styled.input`
     background-color: #9497FF;
@@ -22,32 +23,59 @@ const InputSubmit = styled.input`
 `
 
 const Form = () => {
+    const [cryptos, setCryptos] = useState([]);
+    const [error, setError] = useState(false);
 
-    const [state, SelectCurrency] = useSelectCurrency('Select your Currency', currency);
+    const [currency, SelectCurrency] = useSelectCurrency('Select your Currency', currencies);
+    const [cryptocurrency, SelectCryptocurrency] = useSelectCurrency('Select your Crypto', cryptos);
 
     useEffect(() => {
       const requestAPI = async () => {
         const url = "https://min-api.cryptocompare.com/data/top/mktcapfull?limit=10&tsym=USD"
         const answer = await fetch(url)
         const result = await answer.json()
-        console.log(result.Data);
+
+        const arrayCryptos = result.Data.map( crypto => {
+          const object = {
+            id: crypto.CoinInfo.Name,
+            name: crypto.CoinInfo.FullName
+          }
+          return object;
+        })
+
+        setCryptos(arrayCryptos)
+
       }
       requestAPI();
     }, [])
     
-    
+    const handleSubmit = e => {
+      e.preventDefault()
+
+      if([currency, cryptocurrency].includes('')) {
+        setError(true)
+        return
+      }
+
+      setError(false)
+    }
 
   return (
-    <form>
-        <SelectCurrency />
+    <>
+      {error && <Error>All fields are required</Error>}
 
-        {state}
-
-        <InputSubmit 
-            type="submit" 
-            value="Quote" 
-        />
-    </form>
+      <form
+        onSubmit={handleSubmit}
+      >
+          <SelectCurrency />
+          <SelectCryptocurrency />
+        
+          <InputSubmit 
+              type="submit" 
+              value="Quote" 
+          />
+      </form>
+    </>
   )
 }
 export default Form
